@@ -9,6 +9,9 @@
 * Automation of the data exchange process
 * Quick and flawless performance
 
+### API manual
+
+[http://manual.api.trans.eu](http://manual.api.trans.eu)
 
 ### Support or Contact
 
