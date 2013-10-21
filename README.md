@@ -9,7 +9,11 @@
 * Automation of the data exchange process
 * Quick and flawless performance
 
-### API manual
+### Main TransConnect page
+
+[http://www.trans.eu/en/transconnect](http://www.trans.eu/en/transconnect)
+
+### TransConnect API manual
 
 [http://manual.api.trans.eu](http://manual.api.trans.eu)
 
