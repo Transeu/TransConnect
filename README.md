@@ -1,4 +1,4 @@
-![Logo](http://www.trans.eu/en/wp-content/themes/transeu/images/logo-transeu.png)  TransConnect
+![Logo](http://manual.api.trans.eu/logo-transconnect.png)
 ============
 
 
