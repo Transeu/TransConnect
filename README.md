@@ -19,4 +19,4 @@
 
 ### Support or Contact
 
-Please call us at +44 203 00 25 919 or e-mail api@trans.eu
+Please call us at +48 506 363 605 or e-mail api@trans.eu
