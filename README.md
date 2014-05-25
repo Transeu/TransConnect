@@ -2,7 +2,6 @@
 ============
 
 
-![ImageTransConnect](http://www.trans.eu/en/wp-content/themes/transeu/images/header-slides-22.png)
 
 * Automatic data exchange with Trans.eu System
 * Direct access to data from Trans.eu System
