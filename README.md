@@ -10,11 +10,11 @@
 
 ### Main TransConnect page
 
-[http://www.trans.eu/en/transconnect](http://www.trans.eu/en/transconnect)
+[http://transconnect.trans.eu](http://transconnect.trans.eu)
 
-### TransConnect API manual
+### TransConnect API technical documentation
 
-[http://manual.api.trans.eu](http://manual.api.trans.eu)
+[http://manual.api.trans.eu](http://manual.api.trans.eu/annotated.html)
 
 ### Support or Contact
 
