@@ -1,0 +1,11 @@
+{
+    "name": "transeu/transconnect",
+    "description": "Automatic data exchange with Trans.eu System",
+    "type": "library",
+    "require": {
+        "php": ">=5.3"
+    },
+    "autoload": {
+        "classmap": ["PHP/JSONRPC2ClientSecure.php"]
+    }
+}
