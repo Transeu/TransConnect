@@ -1,5 +1,6 @@
 <?php
 
+use Curl\Curl;
 /**
  * Client Trans API
  * Generated: 2013-10-01 23:17:45
@@ -23,6 +24,20 @@ class JSONRPC2ClientSecure
         $this->_apiKey = $apiKey;
         $this->_secretKey = $secretKey;
         $this->_userSecretKey = $userSecretKey;
+
+        $this->curl = new Curl();
+        $this->curl->setOpt(CURLOPT_SSL_VERIFYHOST, 0);
+        $this->curl->setOpt(CURLOPT_SSL_VERIFYPEER, 0);
+        $this->curl->setOpt(CURLOPT_TIMEOUT, 120);
+        $this->curl->setOpt(CURLOPT_CONNECTTIMEOUT, 120);
+
+        $this->curl->setJsonDecoder(function($response) {
+            $data = json_decode($response, true);
+            if (!($data === null)) {
+                $response = $data;
+            }
+            return $response;
+        });
     }
 
     public function __call($method, $params)
@@ -40,12 +55,11 @@ class JSONRPC2ClientSecure
         }
 
         // zalacz parametry autentykacji,
-        // przygotuj request, opcje polaczenia
+        // przygotuj request
         // i wykonaj polaczenie
         $params = $this->_appendAuthParams($params);
-        $request = $this->_prepareRequest($method, $params);
-        $opts = $this->_prepareOptions($request);
-        $this->_performConnection($opts);
+        $requestData = $this->_prepareRequestData($method, $params);
+        $this->_performConnection($requestData);
 
         // zwroc wynik zapytania API
         $response = $this->getResponse();
@@ -142,31 +156,36 @@ class JSONRPC2ClientSecure
         }
     }
 
-    protected function _prepareRequest($method, $params)
+    protected function _prepareRequestData($method, $params)
     {
         $params = array_values($params);
-        $request = json_encode(array(
+        $request = array(
             'jsonrpc' => '2.0',
             'method' => $method,
             'params' => $params,
             'id' => $this->_getCurrentId(),
-        ));
+        );
 
-        $this->_addDebugMessage('Request: ' . $request);
+        $this->_addDebugMessage('Request: ' . json_encode($request));
 
         return $request;
     }
 
-    protected function _prepareResponse($fp)
+    protected function _performConnection($requestData)
     {
-        $response = '';
-        while ($row = fgets($fp)) {
-            $response .= trim($row) . "\n";
+        $this->curl->setHeader('Content-type', 'application/json');
+
+        $response = $this->curl->post($this->_url, $requestData);
+
+        $this->_addDebugMessage('Response: ' . $this->curl->raw_response);
+
+        if ($this->curl->error) {
+            throw new ApiException("Unable to connect to {$this->_url}. {$this->curl->error_message}");
         }
 
-        $this->_addDebugMessage('Response: ' . $response);
-
-        $response = json_decode($response, true);
+        if (is_string($response)) {
+            $response = json_decode($response, true);
+        }
 
         if ($response === null) {
             throw new ApiException('Incorrect response JSON format');
@@ -178,30 +197,10 @@ class JSONRPC2ClientSecure
 
         if ($response['id'] != $this->_getCurrentId()) {
             throw new ApiException('Incorrect response id (request id: ' . $this->_getCurrentId()
-            . ', response id: ' . $response['id'] . ')');
-        }
-        return $response;
-    }
-
-    protected function _prepareOptions($request)
-    {
-        return array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => 'Content-type: application/json',
-                'content' => $request,
-        ));
-    }
-
-    protected function _performConnection($opts)
-    {
-        $response = '';
-        $context = stream_context_create($opts);
-        if ((!$fp = fopen($this->_url, 'r', false, $context))) {
-            throw new ApiException('Unable to connect to ' . $this->_url);
+                . ', response id: ' . $response['id'] . ')');
         }
 
-        $this->_response = $this->_prepareResponse($fp);
+        $this->_response = $response;
         $this->_increaseId();
     }
 
@@ -277,7 +276,7 @@ class Request
         }
 
         $parameters = array_merge(self::parseParameters(
-                        parse_url($http_url, PHP_URL_QUERY)), $parameters);
+            parse_url($http_url, PHP_URL_QUERY)), $parameters);
 
         $this->_parameters = $parameters;
     }
@@ -452,9 +451,9 @@ class Request
         $port = $aServerParams['port'];
 
         $http_url = ($http_url) ? $http_url : $scheme . '://' .
-                $host . ':' .
-                $port .
-                $_SERVER['REQUEST_URI'];
+            $host . ':' .
+            $port .
+            $_SERVER['REQUEST_URI'];
 
         $http_method = ($http_method) ? $http_method : $_SERVER['REQUEST_METHOD'];
 
