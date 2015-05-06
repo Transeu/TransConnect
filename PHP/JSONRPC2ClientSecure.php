@@ -17,6 +17,7 @@ class JSONRPC2ClientSecure
     protected $_userSecretKey;
     protected $_debug = false;
     protected $_debugMessages = array();
+    protected $curl;
 
     public function __construct($url, $apiKey, $secretKey, $userSecretKey = null)
     {
