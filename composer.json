@@ -3,7 +3,8 @@
     "description": "Automatic data exchange with Trans.eu System",
     "type": "library",
     "require": {
-        "php": ">=5.3"
+        "php": ">=5.3",
+        "php-curl-class/php-curl-class": "~3.0"
     },
     "autoload": {
         "classmap": ["PHP/JSONRPC2ClientSecure.php"]
