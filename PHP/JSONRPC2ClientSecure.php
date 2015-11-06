@@ -17,28 +17,16 @@ class JSONRPC2ClientSecure
     protected $_userSecretKey;
     protected $_debug = false;
     protected $_debugMessages = array();
-    protected $curl;
+    protected $_curl;
+    protected $_curlOptions;
 
-    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null)
+    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null, array $curlOptions = array())
     {
         $this->_url = $url;
         $this->_apiKey = $apiKey;
         $this->_secretKey = $secretKey;
         $this->_userSecretKey = $userSecretKey;
-
-        $this->curl = new Curl();
-        $this->curl->setOpt(CURLOPT_SSL_VERIFYHOST, 0);
-        $this->curl->setOpt(CURLOPT_SSL_VERIFYPEER, 0);
-        $this->curl->setOpt(CURLOPT_TIMEOUT, 120);
-        $this->curl->setOpt(CURLOPT_CONNECTTIMEOUT, 120);
-
-        $this->curl->setJsonDecoder(function($response) {
-            $data = json_decode($response, true);
-            if (!($data === null)) {
-                $response = $data;
-            }
-            return $response;
-        });
+        $this->_curlOptions = $curlOptions;
     }
 
     public function __call($method, $params)
@@ -68,6 +56,14 @@ class JSONRPC2ClientSecure
             throw new ApiException($response['error']['message'], $response['error']['code'], $response['error']['data']);
         }
         return $response['result'];
+    }
+
+    /**
+     * @param Curl $curl
+     */
+    public function setHttpClient(Curl $curl)
+    {
+        $this->_curl = $curl;
     }
 
     /**
@@ -174,14 +170,14 @@ class JSONRPC2ClientSecure
 
     protected function _performConnection($requestData)
     {
-        $this->curl->setHeader('Content-type', 'application/json');
+        $this->_getHttpClient()->setHeader('Content-type', 'application/json');
 
-        $response = $this->curl->post($this->_url, $requestData);
+        $response = $this->_getHttpClient()->post($this->_url, $requestData);
 
-        $this->_addDebugMessage('Response: ' . $this->curl->raw_response);
+        $this->_addDebugMessage('Response: ' . $this->_getHttpClient()->raw_response);
 
-        if ($this->curl->error) {
-            throw new ApiException("Unable to connect to {$this->_url}. {$this->curl->error_message}");
+        if ($this->_getHttpClient()->error) {
+            throw new ApiException("Unable to connect to {$this->_url}. {$this->_getHttpClient()->error_message}");
         }
 
         if (is_string($response)) {
@@ -249,6 +245,44 @@ class JSONRPC2ClientSecure
             $key = 'notifications';
         }
         $this->_debugMessages[$key][] = $message;
+    }
+
+    protected function _getHttpClient()
+    {
+        if ($this->_curl === null) {
+            $this->_curl = new Curl();
+            $this->__setOptions();
+            $this->_setJsonDecoder();
+        }
+
+        return $this->_curl;
+    }
+
+    protected function _setOptions()
+    {
+        $defaultOptions = array(
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER, 0,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_CONNECTTIMEOUT => 120
+        );
+
+        $options = array_merge($defaultOptions, $this->_curlOptions);
+
+        foreach ($options as $optionName => $optionsValue) {
+            $this->_curl->setOpt($optionName, $optionsValue);
+        }
+    }
+
+    protected function _setJsonDecoder()
+    {
+        $this->_curl->setJsonDecoder(function($response) {
+            $data = json_decode($response, true);
+            if (!($data === null)) {
+                $response = $data;
+            }
+            return $response;
+        });
     }
 }
 
