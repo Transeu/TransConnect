@@ -59,14 +59,6 @@ class JSONRPC2ClientSecure
     }
 
     /**
-     * @param Curl $curl
-     */
-    public function setHttpClient(Curl $curl)
-    {
-        $this->_curl = $curl;
-    }
-
-    /**
      * Ustawia klase, ktorej metody beda wywolywane.
      *
      * @param type $className nazwa klasy
@@ -170,14 +162,16 @@ class JSONRPC2ClientSecure
 
     protected function _performConnection($requestData)
     {
-        $this->_getHttpClient()->setHeader('Content-type', 'application/json');
+        $curlHttpClient = $this->_getCurlHttpClient();
 
-        $response = $this->_getHttpClient()->post($this->_url, $requestData);
+        $curlHttpClient->setHeader('Content-type', 'application/json');
 
-        $this->_addDebugMessage('Response: ' . $this->_getHttpClient()->raw_response);
+        $response = $curlHttpClient->post($this->_url, $requestData);
 
-        if ($this->_getHttpClient()->error) {
-            throw new ApiException("Unable to connect to {$this->_url}. {$this->_getHttpClient()->error_message}");
+        $this->_addDebugMessage('Response: ' . $curlHttpClient->raw_response);
+
+        if ($curlHttpClient->error) {
+            throw new ApiException("Unable to connect to {$this->_url}. {$curlHttpClient->error_message}");
         }
 
         if (is_string($response)) {
@@ -247,11 +241,11 @@ class JSONRPC2ClientSecure
         $this->_debugMessages[$key][] = $message;
     }
 
-    protected function _getHttpClient()
+    protected function _getCurlHttpClient()
     {
         if ($this->_curl === null) {
             $this->_curl = new Curl();
-            $this->__setOptions();
+            $this->_setOptions();
             $this->_setJsonDecoder();
         }
 
