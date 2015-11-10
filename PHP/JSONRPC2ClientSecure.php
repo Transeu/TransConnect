@@ -1,10 +1,6 @@
 <?php
-
 use Curl\Curl;
-/**
- * Client Trans API
- * Generated: 2013-10-01 23:17:45
- */
+
 class JSONRPC2ClientSecure
 {
     protected static $_id = 1;
@@ -18,15 +14,15 @@ class JSONRPC2ClientSecure
     protected $_debug = false;
     protected $_debugMessages = array();
     protected $_curl;
-    protected $_curlOptions;
 
-    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null, array $curlOptions = array())
+    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null, Curl $curlHttpClient = null, array $curlOptions = array())
     {
         $this->_url = $url;
         $this->_apiKey = $apiKey;
         $this->_secretKey = $secretKey;
         $this->_userSecretKey = $userSecretKey;
-        $this->_curlOptions = $curlOptions;
+
+        $this->_initCurlHttpClient($curlHttpClient, $curlOptions);
     }
 
     public function __call($method, $params)
@@ -162,16 +158,14 @@ class JSONRPC2ClientSecure
 
     protected function _performConnection($requestData)
     {
-        $curlHttpClient = $this->_getCurlHttpClient();
+        $this->_curl->setHeader('Content-type', 'application/json');
 
-        $curlHttpClient->setHeader('Content-type', 'application/json');
+        $response = $this->_curl->post($this->_url, $requestData);
 
-        $response = $curlHttpClient->post($this->_url, $requestData);
+        $this->_addDebugMessage('Response: ' . $this->_curl->raw_response);
 
-        $this->_addDebugMessage('Response: ' . $curlHttpClient->raw_response);
-
-        if ($curlHttpClient->error) {
-            throw new ApiException("Unable to connect to {$this->_url}. {$curlHttpClient->error_message}");
+        if ($this->_curl->error) {
+            throw new ApiException("Unable to connect to {$this->_url}. {$this->_curl->error_message}");
         }
 
         if (is_string($response)) {
@@ -199,7 +193,7 @@ class JSONRPC2ClientSecure
     {
         $auth_params = array(
             'auth_apikey' => $this->_apiKey,
-            'auth_timestamp' => time(),
+            'auth_timestamp' => $this->_getTimestamp(),
             'auth_nonce' => $this->_generateNonce(),
         );
 
@@ -225,6 +219,11 @@ class JSONRPC2ClientSecure
         return UrlEncoder::encode($signature);
     }
 
+    protected function _getTimestamp()
+    {
+        return time();
+    }
+
     protected function _generateNonce()
     {
         return uniqid(mt_rand(), true);
@@ -241,18 +240,18 @@ class JSONRPC2ClientSecure
         $this->_debugMessages[$key][] = $message;
     }
 
-    protected function _getCurlHttpClient()
+    protected function _initCurlHttpClient(Curl $curlHttpClient = null, array $curlOptions = array())
     {
-        if ($this->_curl === null) {
-            $this->_curl = new Curl();
-            $this->_setOptions();
-            $this->_setJsonDecoder();
+        if ($curlHttpClient === null) {
+            $curlHttpClient = new Curl();
         }
 
-        return $this->_curl;
+        $this->_curl = $curlHttpClient;
+        $this->_setOptions($curlOptions);
+        $this->_setJsonDecoder();
     }
 
-    protected function _setOptions()
+    protected function _setOptions(array $curlOptions = array())
     {
         $defaultOptions = array(
             CURLOPT_SSL_VERIFYHOST => 0,
@@ -261,7 +260,7 @@ class JSONRPC2ClientSecure
             CURLOPT_CONNECTTIMEOUT => 120
         );
 
-        $options = array_merge($defaultOptions, $this->_curlOptions);
+        $options = array_merge($defaultOptions, $curlOptions);
 
         foreach ($options as $optionName => $optionsValue) {
             $this->_curl->setOpt($optionName, $optionsValue);
