@@ -21,11 +21,11 @@ class JSONRPC2ClientSecureTest extends \PHPUnit_Framework_TestCase
             ->setMethods(array('_getTimestamp', '_generateNonce'))
             ->getMock();
 
-        $this->jsonRpc2ClientSecure->expects($this->once())
+        $this->jsonRpc2ClientSecure->expects($this->any())
             ->method('_getTimestamp')
             ->willReturn(1447145676);
 
-        $this->jsonRpc2ClientSecure->expects($this->once())
+        $this->jsonRpc2ClientSecure->expects($this->any())
             ->method('_generateNonce')
             ->willReturn('12447055465641b0cc15a0e0.73308763');
     }
@@ -55,6 +55,27 @@ class JSONRPC2ClientSecureTest extends \PHPUnit_Framework_TestCase
         $this->jsonRpc2ClientSecure->setClass('Test');
 
         $this->jsonRpc2ClientSecure->test(array('foo' => 'bar'));
+    }
+
+    public function testSetCurlOptions()
+    {
+        $this->curl->expects($this->any())
+            ->method('setOpt')
+            ->withConsecutive(
+                array(CURLOPT_TIMEOUT, 10),
+                array(CURLOPT_CONNECTTIMEOUT, 5),
+                array(CURLOPT_CRLF, false),
+                array(CURLOPT_SSL_VERIFYHOST, 0),
+                array(CURLOPT_SSL_VERIFYPEER, 0),
+                array(CURLINFO_HEADER_OUT, true),
+                array(CURLOPT_RETURNTRANSFER, true)
+            );
+
+        new \JSONRPC2ClientSecure('http://api.trans.eu', 'api_key', 'secret_key', null, $this->curl, array(
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_CRLF => false,
+        ));
     }
 
     protected function mockCurl($result = null, $error = null, $id = 1)

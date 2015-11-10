@@ -255,12 +255,14 @@ class JSONRPC2ClientSecure
     {
         $defaultOptions = array(
             CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER, 0,
+            CURLOPT_SSL_VERIFYPEER => 0,
             CURLOPT_TIMEOUT => 120,
-            CURLOPT_CONNECTTIMEOUT => 120
+            CURLOPT_CONNECTTIMEOUT => 120,
+            CURLINFO_HEADER_OUT => true,
+            CURLOPT_RETURNTRANSFER => true,
         );
 
-        $options = array_merge($defaultOptions, $curlOptions);
+        $options = $curlOptions + $defaultOptions;
 
         foreach ($options as $optionName => $optionsValue) {
             $this->_curl->setOpt($optionName, $optionsValue);
