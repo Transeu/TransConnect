@@ -18,7 +18,7 @@ Using [composer.json](https://getcomposer.org/):
 ```json
 {
     "require": {
-        "transeu/transconnect": "0.9.*"
+        "transeu/transconnect": "^1.0"
     },
     "repositories": [
         {
