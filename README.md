@@ -1,6 +1,8 @@
 ![TransConnect](http://manual.api.trans.eu/logo-transconnect.png)
 ============
 
+[![Build Status](https://travis-ci.org/Transeu/TransConnect.svg?branch=master)](https://travis-ci.org/Transeu/TransConnect)
+
 * Automatic data exchange with Trans.eu System
 * Direct access to data from Trans.eu System
 * Automation of the data exchange process

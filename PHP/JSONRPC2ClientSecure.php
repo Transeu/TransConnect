@@ -1,10 +1,6 @@
 <?php
-
 use Curl\Curl;
-/**
- * Client Trans API
- * Generated: 2013-10-01 23:17:45
- */
+
 class JSONRPC2ClientSecure
 {
     protected static $_id = 1;
@@ -17,28 +13,16 @@ class JSONRPC2ClientSecure
     protected $_userSecretKey;
     protected $_debug = false;
     protected $_debugMessages = array();
-    protected $curl;
+    protected $_curl;
 
-    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null)
+    public function __construct($url, $apiKey, $secretKey, $userSecretKey = null, Curl $curlHttpClient = null, array $curlOptions = array())
     {
         $this->_url = $url;
         $this->_apiKey = $apiKey;
         $this->_secretKey = $secretKey;
         $this->_userSecretKey = $userSecretKey;
 
-        $this->curl = new Curl();
-        $this->curl->setOpt(CURLOPT_SSL_VERIFYHOST, 0);
-        $this->curl->setOpt(CURLOPT_SSL_VERIFYPEER, 0);
-        $this->curl->setOpt(CURLOPT_TIMEOUT, 120);
-        $this->curl->setOpt(CURLOPT_CONNECTTIMEOUT, 120);
-
-        $this->curl->setJsonDecoder(function($response) {
-            $data = json_decode($response, true);
-            if (!($data === null)) {
-                $response = $data;
-            }
-            return $response;
-        });
+        $this->_initCurlHttpClient($curlHttpClient, $curlOptions);
     }
 
     public function __call($method, $params)
@@ -174,14 +158,14 @@ class JSONRPC2ClientSecure
 
     protected function _performConnection($requestData)
     {
-        $this->curl->setHeader('Content-type', 'application/json');
+        $this->_curl->setHeader('Content-type', 'application/json');
 
-        $response = $this->curl->post($this->_url, $requestData);
+        $response = $this->_curl->post($this->_url, $requestData);
 
-        $this->_addDebugMessage('Response: ' . $this->curl->raw_response);
+        $this->_addDebugMessage('Response: ' . $this->_curl->raw_response);
 
-        if ($this->curl->error) {
-            throw new ApiException("Unable to connect to {$this->_url}. {$this->curl->error_message}");
+        if ($this->_curl->error) {
+            throw new ApiException("Unable to connect to {$this->_url}. {$this->_curl->error_message}");
         }
 
         if (is_string($response)) {
@@ -209,7 +193,7 @@ class JSONRPC2ClientSecure
     {
         $auth_params = array(
             'auth_apikey' => $this->_apiKey,
-            'auth_timestamp' => time(),
+            'auth_timestamp' => $this->_getTimestamp(),
             'auth_nonce' => $this->_generateNonce(),
         );
 
@@ -235,6 +219,11 @@ class JSONRPC2ClientSecure
         return UrlEncoder::encode($signature);
     }
 
+    protected function _getTimestamp()
+    {
+        return time();
+    }
+
     protected function _generateNonce()
     {
         return uniqid(mt_rand(), true);
@@ -249,6 +238,46 @@ class JSONRPC2ClientSecure
             $key = 'notifications';
         }
         $this->_debugMessages[$key][] = $message;
+    }
+
+    protected function _initCurlHttpClient(Curl $curlHttpClient = null, array $curlOptions = array())
+    {
+        if ($curlHttpClient === null) {
+            $curlHttpClient = new Curl();
+        }
+
+        $this->_curl = $curlHttpClient;
+        $this->_setOptions($curlOptions);
+        $this->_setJsonDecoder();
+    }
+
+    protected function _setOptions(array $curlOptions = array())
+    {
+        $defaultOptions = array(
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => 0,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_CONNECTTIMEOUT => 120,
+            CURLINFO_HEADER_OUT => true,
+            CURLOPT_RETURNTRANSFER => true,
+        );
+
+        $options = $curlOptions + $defaultOptions;
+
+        foreach ($options as $optionName => $optionsValue) {
+            $this->_curl->setOpt($optionName, $optionsValue);
+        }
+    }
+
+    protected function _setJsonDecoder()
+    {
+        $this->_curl->setJsonDecoder(function($response) {
+            $data = json_decode($response, true);
+            if (!($data === null)) {
+                $response = $data;
+            }
+            return $response;
+        });
     }
 }
 
